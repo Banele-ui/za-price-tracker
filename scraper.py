@@ -27,9 +27,10 @@ def get_price_takealot(url):
             browser = p.chromium.launch(headless=True)
             page = browser.new_page()
             page.goto(url, timeout=30000)
-            page.wait_for_selector('span[data-ref="buybox-price-main"]', timeout=10000)
-            price_text = page.locator('span[data-ref="buybox-price-main"]').inner_text()
-            browser.close()
+            page.wait_for_load_state('networkidle', timeout=30000)
+            page.wait_for_selector('span[data-ref="buybox-price-main"], div[class*="price"]', timeout=15000)
+            
+            price_text = page.locator('span[data-ref="buybox-price-main"], div[class*="price"]').first.inner_text()
             print(f"Status: 200")
             price = re.sub(r'[^\d.]', '', price_text)
             return float(price)
