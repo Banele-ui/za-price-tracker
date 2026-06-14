@@ -7,30 +7,15 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.5',
-    'Accept-Encoding': 'gzip, deflate, br',
-    'DNT': '1',
-    'Connection': 'keep-alive',
-    'Upgrade-Insecure-Requests': '1',
-    'Sec-Fetch-Dest': 'document',
-    'Sec-Fetch-Mode': 'navigate',
-    'Sec-Fetch-Site': 'none',
-    'Sec-Fetch-User': '?1'
-}
- 
 def get_price_takealot(url):
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             page = browser.new_page()
-            page.goto(url, timeout=30000)
-            page.wait_for_load_state('networkidle', timeout=30000)
-            page.wait_for_selector('span[data-ref="buybox-price-main"], div[class*="price"]', timeout=15000)
-            
-            price_text = page.locator('span[data-ref="buybox-price-main"], div[class*="price"]').first.inner_text()
+            page.goto(url, wait_until='domcontentloaded', timeout=60000)
+            page.wait_for_selector('span[data-ref="buybox-price-main"], div[class*="price"], [data-testid="price"]', timeout=20000)
+            price_text = page.locator('span[data-ref="buybox-price-main"], div[class*="price"], [data-testid="price"]').first.inner_text()
+            browser.close()
             print(f"Status: 200")
             price = re.sub(r'[^\d.]', '', price_text)
             return float(price)
@@ -40,6 +25,7 @@ def get_price_takealot(url):
 
 def get_price_makro(url):
     try:
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
         r = requests.get(url, headers=headers, timeout=15)
         soup = BeautifulSoup(r.text, 'lxml')
         price_tag = soup.find('p', class_=re.compile('price'))
@@ -51,7 +37,7 @@ def get_price_makro(url):
     return None
 
 def main():
-    urls = supabase.table('product_urls').select('*, stores(name)').execute()
+    urls = supabase.table('product_urls').select('*').execute()
     
     if not urls.data:
         print("No product URLs found in database")
@@ -67,7 +53,7 @@ def main():
             price = get_price_takealot(url)
         elif store_name == 'Makro':
             price = get_price_makro(url)
-            
+        
         if price:
             supabase.table('prices').insert({
                 'product_url_id': product_url_id,
@@ -75,8 +61,8 @@ def main():
                 'in_stock': True
             }).execute()
             print(f"Saved {store_name}: R{price}")
-        else:
-            print(f"Failed to get price for {url}")
+    
+    print("Scrape done.")
 
 if __name__ == "__main__":
     main()
