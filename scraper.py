@@ -1,4 +1,5 @@
 import os, requests, re
+from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
 from supabase import create_client, Client
 
@@ -22,17 +23,19 @@ headers = {
  
 def get_price_takealot(url):
     try:
-        r = requests.get(url, headers=headers, timeout=15)
-        soup = BeautifulSoup(r.text, 'lxml')
-        print(f"Status: {r.status_code}")  # Add this line
-
-        price_tag = soup.find('span', {'data-ref': 'buybox-price-main'})
-        if price_tag:
-            price = re.sub(r'[^\d.]', '', price_tag.text)
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            page.goto(url, timeout=30000)
+            page.wait_for_selector('span[data-ref="buybox-price-main"]', timeout=10000)
+            price_text = page.locator('span[data-ref="buybox-price-main"]').inner_text()
+            browser.close()
+            print(f"Status: 200")
+            price = re.sub(r'[^\d.]', '', price_text)
             return float(price)
     except Exception as e:
         print(f"Takealot error {url}: {e}")
-    return None
+        return None
 
 def get_price_makro(url):
     try:
