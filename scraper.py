@@ -14,7 +14,7 @@ def get_price_takealot(url):
     try:
         r = requests.get(url, headers=headers, timeout=15)
         soup = BeautifulSoup(r.text, 'lxml')
-        price_tag = soup.find('span', {'data-ref': 'price'})
+        price_tag = soup.find('span', {'data-ref': 'buybox-price-main'})
         if price_tag:
             price = re.sub(r'[^\d.]', '', price_tag.text)
             return float(price)
