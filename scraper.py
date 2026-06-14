@@ -9,8 +9,8 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
 }
-
-    def get_price_takealot(url):
+ 
+def get_price_takealot(url):
     try:
         r = requests.get(url, headers=headers, timeout=15)
         soup = BeautifulSoup(r.text, 'lxml')
