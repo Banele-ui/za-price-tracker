@@ -37,7 +37,7 @@ def get_price_makro(url):
     return None
 
 def main():
-    urls = supabase.table('product_urls').select('*').execute()
+    urls = supabase.table('product_urls').select('*, stores(name)').execute()
     
     if not urls.data:
         print("No product URLs found in database")
